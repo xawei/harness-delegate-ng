@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    {{- include "harness-delegate-ng.labels" . | nindent 4 }}
+  name: {{ include "harness-delegate-ng.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas }}
+  minReadySeconds: {{ .Values.minReadySeconds }}
+  selector:
+    matchLabels:
+      {{- include "harness-delegate-ng.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.annotations | nindent 8 }}
+        checksum/secret: {{ include (print .Template.BasePath "/secret.yaml") . | sha256sum | trunc 63 }}
+        checksum/configmap: {{ include (print .Template.BasePath "/configMap.yaml") . | sha256sum | trunc 63 }}
+      labels:
+        {{- include "harness-delegate-ng.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "harness-delegate-ng.serviceAccountName" . }}
+      terminationGracePeriodSeconds: 600
+      restartPolicy: Always
+      {{- if .Values.imagePullSecret }}
+      imagePullSecrets:
+      - name: {{ .Values.imagePullSecret }}
+      {{- end }}
+      containers:
+        - name: delegate
+          image: {{ .Values.delegateDockerImage }}
+          {{- if .Values.securityContext.runAsRoot }}
+          securityContext:
+            {{- toYaml .Values.delegateSecurityContext | nindent 12 }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          resources:
+            limits:
+              memory: {{ include "harness-delegate-ng.assignedMemory" .}}
+            requests:
+              cpu: {{ .Values.cpu }}
+              memory: {{ include "harness-delegate-ng.assignedMemory" .}}
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 3460
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds:  {{ .Values.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3460
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          envFrom:
+            - configMapRef:
+                name: {{ template "harness-delegate-ng.fullname" . }}
+            - secretRef:
+                name: {{ include "harness-delegate-ng.delegateToken" . }}
+            - configMapRef:
+                name: {{ template "harness-delegate-ng.fullname" . }}-proxy
+                optional: true
+            - secretRef:
+                name: {{ template "harness-delegate-ng.fullname" . }}-proxy
+                optional: true
+            - configMapRef:
+                name: {{ template "harness-delegate-ng.fullname" . }}-shared-certificates
+                optional: true
+          {{- with .Values.custom_envs }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+          {{- if $.Values.shared_certificates.ca_bundle }}
+            - name: certvol
+              mountPath: {{ .Values.shared_certificates.certs_path }}
+              subPath:  ca.bundle
+          {{- end }}
+          {{- with .Values.custom_mounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+      {{- if $.Values.shared_certificates.ca_bundle }}
+        - name: certvol
+          secret:
+            secretName: {{ template "harness-delegate-ng.fullname" . }}-addcerts
+            items:
+            - key: ca.bundle
+              path: ca.bundle
+      {{- end }}
+      {{- with .Values.custom_volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

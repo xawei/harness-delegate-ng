@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "harness-delegate-ng.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "harness-delegate-ng.labels" . | nindent 4 }}
+data:
+  ACCOUNT_ID: {{ .Values.accountId }}
+  MANAGER_HOST_AND_PORT : {{ .Values.managerEndpoint }}
+  DEPLOY_MODE: {{ .Values.deployMode }}
+  DELEGATE_NAME: {{ .Values.delegateName | quote }}
+  POLL_FOR_TASKS: {{ .Values.pollForTasks | quote }}
+  NEXT_GEN: {{ .Values.nextGen | quote }}
+  DELEGATE_TAGS: {{ .Values.tags | quote }}
+  DELEGATE_DESCRIPTION: {{ .Values.description | quote }}
+  JAVA_OPTS: {{ .Values.javaOpts }}
+  DELEGATE_TYPE: {{ .Values.delegateType }}
+  DELEGATE_NAMESPACE: {{ .Release.Namespace }}
+  INIT_SCRIPT: {{ .Values.initScript | quote }}
+  CLIENT_TOOLS_DOWNLOAD_DISABLED: "true"
+  LOG_STREAMING_SERVICE_URL: {{ .Values.managerEndpoint }}/log-service/
+  {{- if not .Values.nextGen }}
+  DELEGATE_GROUP_NAME: {{ template "harness-delegate-ng.fullname" . }}
+  {{- end }}
+
+
