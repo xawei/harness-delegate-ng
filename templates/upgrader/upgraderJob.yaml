@@ -22,7 +22,7 @@ spec:
               imagePullPolicy: Always
               envFrom:
                 - secretRef:
-                    name: {{ include "harness-delegate-ng.upgraderDelegateToken" . }}
+                    name: {{ .Values.delegateName }}-upgrader-token
               volumeMounts:
                 - name: config-volume
                   mountPath: /etc/config

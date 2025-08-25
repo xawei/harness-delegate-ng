@@ -68,18 +68,6 @@ Fetch access level using kubernetes permission value
   {{- end }}
 {{- end }}
 
-
-{{/*
-Check if custom role is provided in k8sPermissionsType
-*/}}
-{{- define "harness-delegate-ng.useCustomRole" -}}
-  {{- if or (or (eq .Values.k8sPermissionsType "CLUSTER_ADMIN") (eq .Values.k8sPermissionsType "CLUSTER_VIEWER") ) (eq .Values.k8sPermissionsType "NAMESPACE_ADMIN") }}
-  {{- print "false" }}
-  {{- else }}
-  {{- print "true" }}
-  {{- end }}
-{{- end }}
-
 {{/*
 Memory assigned to container in Mi
 */}}
@@ -88,38 +76,4 @@ Memory assigned to container in Mi
   {{- printf "%s%s" $allocatedRam "Mi" }}
 {{- end }}
 
-{{/*
-Generate a list of default certificate path with certificate target location
-*/}}
-{{- define "certificate_mount_volumes" -}}
 
-  {{- $default_certs_path := .certs_path }}
-  {{- $mount_volumes := list -}}
-
-  {{- range .ci_mount_targets }}
-    {{- $mount_volumes = append $mount_volumes (printf "%s:%s" $default_certs_path .) -}}
-  {{- end }}
-  {{- join "," $mount_volumes -}}
-{{- end }}
-
-{{/*
-Define the delegate token name
-*/}}
-{{- define "harness-delegate-ng.delegateToken" -}}
-{{- if not .Values.existingDelegateToken }}
-{{- include "harness-delegate-ng.fullname" . }}
-{{- else }}
-{{- .Values.existingDelegateToken | trunc 63 | toString }}
-{{- end }}
-{{- end }}
-
-{{/*
-Define the upgrader token name
-*/}}
-{{- define "harness-delegate-ng.upgraderDelegateToken" -}}
-{{- if not .Values.upgrader.existingUpgraderToken }}
-{{- include "harness-delegate-ng.fullname" . }}-upgrader-token
-{{- else }}
-{{- .Values.upgrader.existingUpgraderToken | trunc 63 | toString }}
-{{- end }}
-{{- end }}
