@@ -68,59 +68,59 @@ This document provides a comprehensive comparison between Harness Delegate NG He
 
 **Added Fields:**
 ```yaml
-# New deployment mode specification
-deployMode: "KUBERNETES"
+# 🚀 New deployment mode specification
+deployMode: "KUBERNETES"  # 📄 Used in: deployment.yaml (env vars)
 
-# Enhanced autoscaling documentation
+# 📈 Enhanced autoscaling documentation
 autoscaling:
   # Edit this if you want to enable horizontal pod autoscaling
-  enabled: false
+  enabled: false  # 📄 Used in: hpa.yaml, hpaLegacy.yaml
   # ... (enhanced comments)
 
-# Configurable annotations (moved from hardcoded)
+# 🏷️ Configurable annotations (moved from hardcoded)
 annotations:
-  prometheus.io/scrape: "true"
-  prometheus.io/port: "3460"
-  prometheus.io/path: "/api/metrics"
+  prometheus.io/scrape: "true"     # 📄 Used in: deployment.yaml (pod annotations)
+  prometheus.io/port: "3460"       # 📄 Used in: deployment.yaml (pod annotations)
+  prometheus.io/path: "/api/metrics" # 📄 Used in: deployment.yaml (pod annotations)
 
-# External secret support
-existingDelegateToken: ""
+# 🔐 External secret support
+existingDelegateToken: ""  # 📄 Used in: secret.yaml (conditional creation), deployment.yaml (secret reference)
 
-# Enhanced upgrader configuration
+# ⬆️ Enhanced upgrader configuration
 upgrader:
   # ... existing fields ...
-  existingUpgraderToken: ""
+  existingUpgraderToken: ""  # 📄 Used in: upgrader/secret.yaml (conditional creation)
 
-# Enhanced security context
+# 🛡️ Enhanced security context
 delegateSecurityContext:
-  allowPrivilegeEscalation: false
-  runAsUser: 0
+  allowPrivilegeEscalation: false  # 📄 Used in: deployment.yaml (container securityContext)
+  runAsUser: 0                     # 📄 Used in: deployment.yaml (container securityContext)
 
-# Shared certificates configuration
+# 🔒 Shared certificates configuration
 shared_certificates:
-  certs_path: /shared/customer-artifacts/certificates/ca.bundle
-  ca_bundle: # |
+  certs_path: /shared/customer-artifacts/certificates/ca.bundle  # 📄 Used in: deployment.yaml (volume mount path)
+  ca_bundle: # |                    # 📄 Used in: shared_certificates/certificateSecret.yaml
     # -----BEGIN CERTIFICATE-----
     # ...
-  ci_mount_targets:
+  ci_mount_targets:               # 📄 Used in: shared_certificates/certificateConfigMap.yaml
     # - /etc/ssl/certs/ca-bundle.crt
     # - /etc/ssl/certs/ca-certificates.crt
 
-# Custom environment variables
-custom_envs:
+# 🌍 Custom environment variables
+custom_envs:  # 📄 Used in: deployment.yaml (container env section)
 
-# Custom volume mounts
-custom_mounts:
+# 💾 Custom volume mounts
+custom_mounts:  # 📄 Used in: deployment.yaml (container volumeMounts)
 
-# Custom volumes
-custom_volumes:
+# 📦 Custom volumes
+custom_volumes:  # 📄 Used in: deployment.yaml (pod volumes)
 
-# Deployment stability enhancement
-minReadySeconds: 120
+# ⏱️ Deployment stability enhancement
+minReadySeconds: 120  # 📄 Used in: deployment.yaml (deployment spec)
 
-# CCM cost visibility
+# 💰 CCM cost visibility
 ccm:
-  visibility: false
+  visibility: false  # 📄 Used in: ccm/cost-access.yaml (conditional creation)
 ```
 
 **Updated Fields:**
@@ -133,73 +133,79 @@ ccm:
 
 **Added Helper Functions:**
 ```yaml
-# Custom role detection
+# 🔐 Custom role detection
 {{- define "harness-delegate-ng.useCustomRole" -}}
   # Logic to determine if custom role is being used
 {{- end }}
+# 📄 Used in: customRoleBinding.yaml (conditional creation)
 
-# Certificate mount volume generation
+# 🔒 Certificate mount volume generation
 {{- define "certificate_mount_volumes" -}}
   # Generates comma-separated list of certificate mount paths
 {{- end }}
+# 📄 Used in: shared_certificates/certificateConfigMap.yaml (CI_MOUNT_VOLUMES)
 
-# Token name resolution with external secret support
+# 🔑 Token name resolution with external secret support
 {{- define "harness-delegate-ng.delegateToken" -}}
   # Returns appropriate token secret name
 {{- end }}
+# 📄 Used in: deployment.yaml (secret reference), secret.yaml (conditional logic)
 
+# ⬆️ Upgrader token name resolution
 {{- define "harness-delegate-ng.upgraderDelegateToken" -}}
   # Returns appropriate upgrader token secret name
 {{- end }}
+# 📄 Used in: upgrader/cronjob.yaml (secret reference), upgrader/secret.yaml (conditional logic)
 ```
 
 #### 4. **`templates/deployment.yaml`** - Significant Enhancements
 
 **Added Configurations:**
 ```diff
+# ⏱️ Deployment stability enhancement
 + minReadySeconds: {{ .Values.minReadySeconds }}
 
-# Annotations moved from hardcoded to configurable
+# 🏷️ Annotations moved from hardcoded to configurable
 metadata:
   annotations:
-+   {{- toYaml .Values.annotations | nindent 8 }}
--   prometheus.io/scrape: "true"
--   prometheus.io/port: "3460"
--   prometheus.io/path: "/api/metrics"
++   {{- toYaml .Values.annotations | nindent 8 }}  # 📍 Pod-level annotations
+-   prometheus.io/scrape: "true"                   # ❌ Removed hardcoded
+-   prometheus.io/port: "3460"                     # ❌ Removed hardcoded
+-   prometheus.io/path: "/api/metrics"             # ❌ Removed hardcoded
 
-# Enhanced security context
+# 🛡️ Enhanced security context
 securityContext:
-- allowPrivilegeEscalation: false
-- runAsUser: 0
-+ {{- toYaml .Values.delegateSecurityContext | nindent 12 }}
+- allowPrivilegeEscalation: false               # ❌ Removed hardcoded
+- runAsUser: 0                                   # ❌ Removed hardcoded
++ {{- toYaml .Values.delegateSecurityContext | nindent 12 }}  # 📍 Configurable security
 
-# Additional environment sources
+# 🔒 Additional environment sources for certificates
 envFrom:
   # ... existing sources ...
-+ - configMapRef:
++ - configMapRef:                                # 📍 Certificate environment variables
 +     name: {{ template "harness-delegate-ng.fullname" . }}-shared-certificates
 +     optional: true
 
-# Custom environment variables
-+ {{- with .Values.custom_envs }}
+# 🌍 Custom environment variables
++ {{- with .Values.custom_envs }}               # 📍 User-defined environment variables
 + env:
 +   {{- toYaml . | nindent 12 }}
 + {{- end }}
 
-# Volume mounts for certificates
+# 💾 Volume mounts for certificates and custom mounts
 + volumeMounts:
-+ {{- if $.Values.shared_certificates.ca_bundle }}
++ {{- if $.Values.shared_certificates.ca_bundle }}  # 📍 Certificate bundle mount
 +   - name: certvol
 +     mountPath: {{ .Values.shared_certificates.certs_path }}
 +     subPath: ca.bundle
 + {{- end }}
-+ {{- with .Values.custom_mounts }}
++ {{- with .Values.custom_mounts }}              # 📍 User-defined volume mounts
 +   {{- toYaml . | nindent 12 }}
 + {{- end }}
 
-# Volumes for certificates
+# 📦 Volumes for certificates and custom volumes
 + volumes:
-+ {{- if $.Values.shared_certificates.ca_bundle }}
++ {{- if $.Values.shared_certificates.ca_bundle }}  # 📍 Certificate secret volume
 +   - name: certvol
 +     secret:
 +       secretName: {{ template "harness-delegate-ng.fullname" . }}-addcerts
@@ -207,35 +213,36 @@ envFrom:
 +       - key: ca.bundle
 +         path: ca.bundle
 + {{- end }}
-+ {{- with .Values.custom_volumes }}
++ {{- with .Values.custom_volumes }}             # 📍 User-defined volumes
 +   {{- toYaml . | nindent 8 }}
 + {{- end }}
 ```
 
-**Updated Secret Reference:**
+**🔑 Updated Secret Reference:**
 ```diff
-- secretRef:
+- secretRef:                                      # ❌ Old hardcoded reference
 -   name: {{ template "harness-delegate-ng.fullname" . }}
-+ secretRef:
-+   name: {{ include "harness-delegate-ng.delegateToken" . }}
++ secretRef:                                      # ✅ New dynamic reference
++   name: {{ include "harness-delegate-ng.delegateToken" . }}  # 📍 Supports external secrets
 ```
 
-#### 5. **`templates/secret.yaml`** - Conditional Creation
+#### 5. **`templates/secret.yaml`** - 🔐 Conditional Creation
 
 **Enhanced Logic:**
 ```diff
-+ {{- if not .Values.existingDelegateToken }}
++ {{- if not .Values.existingDelegateToken }}    # 📍 Only create if no external secret
 apiVersion: v1
 kind: Secret
 # ... rest of secret definition ...
-+ {{- end }}
++ {{- end }}                                     # 📍 Supports external secret management
 ```
 
 ### 🔄 **MODIFIED FILES** (Existing files with updates)
 
-#### 1. **`templates/hpa.yaml`**
-- **Change**: Updated to use `autoscaling/v2` API for Kubernetes >= 1.23
-- **Condition**: Added version check to complement new `hpaLegacy.yaml`
+#### 1. **`templates/hpa.yaml`** - 📈 API Version Update
+- **🔄 Change**: Updated to use `autoscaling/v2` API for Kubernetes >= 1.23
+- **📋 Condition**: Added version check to complement new `hpaLegacy.yaml`
+- **📄 Usage**: Works in tandem with `hpaLegacy.yaml` for version compatibility
 
 ---
 
