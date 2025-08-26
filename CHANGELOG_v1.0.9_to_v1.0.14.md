@@ -16,6 +16,7 @@ This document provides a comprehensive comparison between Harness Delegate NG He
   - **Purpose**: Enables custom Kubernetes role binding for non-standard permission configurations
   - **Functionality**: Creates RoleBinding when custom role is specified in `k8sPermissionsType`
   - **Condition**: Only deployed when `harness-delegate-ng.useCustomRole` helper returns "true"
+  - **⚠️ Default Behavior**: **NOT CREATED** with default values (`k8sPermissionsType: "CLUSTER_ADMIN"`)
 
 #### 2. CCM (Cloud Cost Management) Integration
 - **`templates/ccm/cost-access.yaml`**
@@ -23,23 +24,31 @@ This document provides a comprehensive comparison between Harness Delegate NG He
   - **Functionality**: Creates ClusterRole and ClusterRoleBinding for cost monitoring
   - **Condition**: Only deployed when `ccm.visibility: true` and `k8sPermissionsType != "CLUSTER_ADMIN"`
   - **Permissions**: Read access to pods, nodes, events, namespaces, PVs, PVCs, deployments, jobs, metrics
+  - **⚠️ Default Behavior**: **NOT CREATED** with default values (`ccm.visibility: false` and `k8sPermissionsType: "CLUSTER_ADMIN"`)
 
 #### 3. Shared Certificates Management
 - **`templates/shared_certificates/certificateConfigMap.yaml`**
   - **Purpose**: Manages certificate configuration for CI/CD pipelines
   - **Functionality**: Creates ConfigMap with certificate paths and mount targets
   - **Condition**: Only created when `shared_certificates.ci_mount_targets` is defined
+  - **⚠️ Default Behavior**: **NOT CREATED** with default values (`ci_mount_targets` is empty/commented)
 
 - **`templates/shared_certificates/certificateSecret.yaml`**
   - **Purpose**: Stores custom CA bundle for self-signed certificates
   - **Functionality**: Creates Secret with base64-encoded certificate bundle
   - **Condition**: Only created when `shared_certificates.ca_bundle` is provided
+  - **⚠️ Default Behavior**: **NOT CREATED** with default values (`ca_bundle` is empty/commented)
 
 #### 4. Legacy HPA Support
 - **`templates/hpaLegacy.yaml`**
   - **Purpose**: Backward compatibility for Kubernetes versions < 1.23
   - **Functionality**: Uses `autoscaling/v2beta1` API instead of `autoscaling/v2`
   - **Condition**: Only deployed when autoscaling is enabled and Kubernetes version < 1.23
+  - **⚠️ Default Behavior**: **NOT CREATED** with default values (`autoscaling.enabled: false`)
+
+> **📋 Summary of New Files with Default Values:**
+> 
+> **All 5 new template files will NOT be created when using default values from either v1.0.9 or v1.0.14.** This ensures backward compatibility and prevents unexpected resource creation during upgrades. Users must explicitly enable these features by modifying the appropriate values in `values.yaml`.
 
 ### 🔄 **UPDATED FILES**
 
